@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import our unified design system */
+@import './styles/design-system.css';
+
+/* Global resets and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure proper font rendering */
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--slate-900);
+  background-color: var(--slate-50);
+}
+
+/* App container */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove default list styles */
+ul, ol {
+  list-style: none;
+}
+
+/* Remove default button styles */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Image responsive by default */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Link styles */
+a {
+  color: var(--primary-600);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+a:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+/* Focus management for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--slate-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate-300);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}
+
+/* Dark theme scrollbar */
+[data-theme="dark"]::-webkit-scrollbar-track {
+  background: var(--slate-700);
+}
+
+[data-theme="dark"]::-webkit-scrollbar-thumb {
+  background: var(--slate-500);
+}
+
+[data-theme="dark"]::-webkit-scrollbar-thumb:hover {
+  background: var(--slate-400);
+}
