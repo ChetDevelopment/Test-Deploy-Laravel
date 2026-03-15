@@ -1,0 +1,61 @@
+# ===========================================
+# Git
+# ===========================================
+.git
+.gitignore
+
+# ===========================================
+# IDE & Editor
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===========================================
+# Laravel
+# ===========================================
+.env
+.env.*
+!.env.example
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+vendor/
+node_modules/
+
+# ===========================================
+# Testing
+# ===========================================
+.phpunit/
+coverage/
+tests/
+
+# ===========================================
+# Logs & Cache
+# ===========================================
+*.log
+*.cache
+storage/*.key
+storage/logs/*
+bootstrap/cache/*
+
+# ===========================================
+# Documentation
+# ===========================================
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE.md
+docs/
+
+# ===========================================
+# Docker
+# ===========================================
+Dockerfile
+docker-compose.yml
+.docker/

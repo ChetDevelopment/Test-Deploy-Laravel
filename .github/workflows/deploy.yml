@@ -1,0 +1,56 @@
+name: CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build-and-deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Backend Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vanda-backend ./backend
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vanda-frontend ./frontend
+
+      - name: Push Backend Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/vanda-backend
+
+      - name: Push Frontend Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
+
+      - name: Deploy to AWS Server
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-backend
+            docker pull ${{ secrets.DOCKER_USERNAME }}/vanda-frontend
+
+            docker stop laravel_app || true
+            docker stop vue_app || true
+
+            docker rm laravel_app || true
+            docker rm vue_app || true
+
+            docker run -d -p 9000:9000 --name laravel_app ${{ secrets.DOCKER_USERNAME }}/vanda-backend
+            docker run -d -p 5173:5173 --name vue_app ${{ secrets.DOCKER_USERNAME }}/vanda-frontend

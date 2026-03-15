@@ -1,0 +1,57 @@
+# ===========================================
+# Git
+# ===========================================
+.git
+.gitignore
+
+# ===========================================
+# IDE & Editor
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===========================================
+# Backend (Laravel)
+# ===========================================
+backend/.env
+backend/.env.*
+backend/vendor/
+backend/node_modules/
+backend/.phpunit/
+backend/tests/
+backend/storage/logs/*
+backend/bootstrap/cache/*
+backend/.styleci.yml
+
+# ===========================================
+# Frontend (Vue)
+# ===========================================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# ===========================================
+# CI/CD & Docker
+# ===========================================
+.github/workflows/
+docker-compose.yml
+Dockerfile
+.docker/
+
+# ===========================================
+# Documentation
+# ===========================================
+README.md
+DEPLOYMENT-GUIDE.md
+
+# ===========================================
+# Logs & Cache
+# ===========================================
+*.log
+*.cache
+*.tmp

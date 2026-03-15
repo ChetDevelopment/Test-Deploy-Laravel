@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test files
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Documentation
+README.md
+DESIGN_SYSTEM_GUIDE.md
+
+# OS files
+.DS_Store
+Thumbs.db

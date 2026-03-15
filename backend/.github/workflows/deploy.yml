@@ -1,0 +1,165 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+# ===========================================
+# Environment Variables (Secrets to configure)
+# ===========================================
+# AWS_ACCESS_KEY_ID
+# AWS_SECRET_ACCESS_KEY
+# AWS_REGION
+# AWS_ECR_REGISTRY
+# ECS_CLUSTER_NAME
+# ECS_SERVICE_NAME
+# ECS_TASK_DEFINITION
+# ECS_CONTAINER_NAME
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+
+jobs:
+  # ===========================================
+  # 1. Test Stage
+  # ===========================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: laravel
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, mysql, gd, redis
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Configure database
+        run: |
+          sed -i "s/DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/g" .env
+          sed -i "s/DB_HOST=localhost/DB_HOST=127.0.0.1/g" .env
+
+      - name: Execute tests
+        run: vendor/bin/phpunit --colors=never
+
+  # ===========================================
+  # 2. Build & Push Docker Image
+  # ===========================================
+  build:
+    name: Build & Push Docker
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+          -t $ECR_REGISTRY/$IMAGE_NAME:latest .
+
+      - name: Push to ECR
+        run: |
+          docker push $ECR_REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          docker push $ECR_REGISTRY/$IMAGE_NAME:latest
+
+  # ===========================================
+  # 3. Deploy to ECS
+  # ===========================================
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: fill-in-template
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ vars.ECS_TASK_DEFINITION }}
+          container-name: ${{ vars.ECS_CONTAINER_NAME }}
+          image: $ECR_REGISTRY/$IMAGE_NAME:${{ github.sha }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.fill-in-template.outputs.task-definition }}
+          cluster: ${{ vars.ECS_CLUSTER_NAME }}
+          service: ${{ vars.ECS_SERVICE_NAME }}
+          wait-for-minimum-healthy-services: 2
+          wait-for-minimum-healthy-timeout: 300
+
+      - name: Run database migrations
+        run: |
+          aws ecs execute-command \
+            --cluster ${{ vars.ECS_CLUSTER_NAME }} \
+            --task $(aws ecs list-tasks --cluster ${{ vars.ECS_CLUSTER_NAME }} --service-name ${{ vars.ECS_SERVICE_NAME }} --desired-status RUNNING --query 'taskArns[0]' --output text) \
+            --container ${{ vars.ECS_CONTAINER_NAME }} \
+            --command "php artisan migrate --force" \
+            --interactive
+
+      - name: Clear Laravel cache
+        run: |
+          aws ecs execute-command \
+            --cluster ${{ vars.ECS_CLUSTER_NAME }} \
+            --task $(aws ecs list-tasks --cluster ${{ vars.ECS_CLUSTER_NAME }} --service-name ${{ vars.ECS_SERVICE_NAME }} --desired-status RUNNING --query 'taskArns[0]' --output text) \
+            --container ${{ vars.ECS_CONTAINER_NAME }} \
+            --command "php artisan optimize:clear" \
+            --interactive
