@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libwebp-dev
 
-# Install PHP extensions (Added GD here)
+# Install PHP extensions (Added pdo_mysql here)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install pdo pdo_pgsql zip gd
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql zip gd
 
 WORKDIR /var/www
 
