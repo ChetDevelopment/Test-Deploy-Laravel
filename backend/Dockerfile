@@ -18,20 +18,8 @@ RUN curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
 RUN composer install
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
 
 CMD ["php-fpm"]
-7. Create Frontend Dockerfile (Vue 3)
-
-Location
-
-frontend/Dockerfile
-FROM node:20
-
-WORKDIR /app
-
-COPY . .
-
-RUN npm install
-RUN npm run build
-
-CMD ["npm", "run", "preview"]
